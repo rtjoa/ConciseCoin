@@ -98,7 +98,6 @@ class Node:
         while 1:
             chunk=clientname.recv(2**30)
             if len(chunk):
-                print(repr(chunk))
                 self.handleRequest(json.loads(chunk))
     
     def balance(self):

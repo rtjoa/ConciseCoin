@@ -53,6 +53,7 @@ while 1:
     terms = command.split(" ")
     if terms[0] == "quit":
         node.listener.close()
+        node.stopMining()
         node.saveToFile(SAVE_FILE)
         sys.exit()
     elif terms[0] == "mine":
