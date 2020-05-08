@@ -34,7 +34,7 @@ class Node:
     
     def saveToFile(self, path):
         obj = {
-            "chain": self.chain.toJSON(),
+            "chain": self.chain.toJSON() if self.chain else None,
             "peers": self.peers,
             "privKey": self.privKey # todo: don't store this as plaintext
         }
