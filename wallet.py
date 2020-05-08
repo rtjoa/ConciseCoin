@@ -46,7 +46,7 @@ if not node.chain:
 time.sleep(1)
 
 print()
-print("Available commands: addPeer <peer>, mine, stopMining, quit.")
+print("Available commands: addPeer <peer>, balance, give <peer> <amt>, mine, quit, requestChain, shareChain, stopMining.")
 
 while 1:
     command = input(">> ")
@@ -65,5 +65,9 @@ while 1:
         node.stopMining()
     elif terms[0] == "addPeer":
         node.addPeer(terms[1])
+    elif terms[0] == "balance":
+        print(node.balance())
+    elif terms[0] == "give":
+        node.give(terms[1], float(terms[2]))
     else:
         print("Unknown command!")

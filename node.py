@@ -96,11 +96,14 @@ class Node:
     
     def receiveContinually(self, clientname, address):
         while 1:
-            chunk=clientname.recv(4096)
+            chunk=clientname.recv(2**30)
             if len(chunk):
                 print(repr(chunk))
                 self.handleRequest(json.loads(chunk))
     
+    def balance(self):
+        return sum(txOut.value for txOut in self.chain.pool.txOuts if txOut.address.equals(self.pubKey))
+        
     def handleRequest(self, request):
         if request['type'] == "REQUEST_CHAIN":
             self.shareChain()

@@ -49,7 +49,9 @@ class PubKeyWrapper:
       self.n = pubKey['n']
       self.e = pubKey['e']
   def use(self):
-    return rsa.key.PublicKey(self.n, self.e)
+      return rsa.key.PublicKey(self.n, self.e)
+  def equals(self, other):
+      return self.__dict__ == other.__dict__
 
 class PrivKeyWrapper:
   def __init__(self, privKey):
