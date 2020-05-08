@@ -29,7 +29,10 @@ class Node:
         f.close()
         peers = obj['peers']
         privKey = PrivKeyWrapper(obj['privKey'])
-        chain = Blockchain.fromJSON(obj['chain'])
+        if obj['chain'] != 'null' and obj['chain']:
+            chain = Blockchain.fromJSON(obj['chain'])
+        else:
+            chain = None
         return Node(privKey, peers, chain)
     
     def saveToFile(self, path):
@@ -99,6 +102,14 @@ class Node:
                 self.handleRequest(json.loads(chunk))
     
     def handleRequest(self, request):
+        if request['type'] == "REQUEST_CHAIN":
+            self.shareChain()
+        elif request['type'] == "CHAIN":
+            candidate = Blockchain.fromJSON(request['data'])
+            if len(candidate.blocks) > len(self.chain.blocks): # todo: and candidate is valid
+                self.chain = candidate
+        else:
+            print("Unknown request type!")
         return
                         
     def exposeToNewPeers(self):
