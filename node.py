@@ -9,12 +9,11 @@ HARDCODED_PEERS = ['25.100.101.237']
 
 class Node:
     def __init__(self, privKey = None, peers = [], chain = None):
-        self.privKey = privKey or PrivKeyWrapper(rsa.newkeys(512)[1])
-        self.pubKey = PubKeyWrapper(self.privKey.__dict__)
+        self.privKey = privKey or PrivKeyWrapper(rsa.newkeys(512)[1]) # generate new keys if not supplied
+        self.pubKey = PubKeyWrapper(self.privKey.__dict__) # a PrivKey contains info of a PubKey
         self.chain = chain
         self.peers = peers
-        self.peersSendSocks = []
-        self.peersSendHosts = []
+        self.peerSocks = {}
         self.pendingTxs = []
         for peer in HARDCODED_PEERS:
             if not peer in self.peers:
@@ -22,6 +21,7 @@ class Node:
         self.listener = None
         self.mining = False
     
+    # Factory method to load node from json file
     @staticmethod
     def loadFromFile(path):
         f  = open(path, 'r')
@@ -35,6 +35,7 @@ class Node:
             chain = None
         return Node(privKey, peers, chain)
     
+    # Write json representation to a file
     def saveToFile(self, path):
         obj = {
             "chain": self.chain.toJSON() if self.chain else None,
@@ -45,11 +46,8 @@ class Node:
         f.write(json.dumps(obj, default=lambda o:o.__dict__))
         f.close()
     
-    def connect(self):
-        self.exposeToNewPeers()
-        for peer in self.peers:
-            self.connectToPeer(peer)
-
+    
+    # Mine until stopMining() called
     def mine(self):
         if not self.chain:
             print("No chain to mine on!")
@@ -76,13 +74,14 @@ class Node:
     def stopMining(self):
         self.mining = False
     
-    def shareChain(self):
+    # Shares chain with all peers BUT IT SHOULD ONLY SHARE WITH ONE INSTEAD
+    def shareChain(self, recipient='all'):
         chain = self.chain.toJSON()
         self.sendToPeers({
             "type": "CHAIN",
             "data": chain
-        })
-        
+        }, recipient)
+    
     def requestChain(self):
         self.sendToPeers({
             "type": "REQUEST_CHAIN"
@@ -94,18 +93,12 @@ class Node:
             "data": msg
         })
     
-    def receiveContinually(self, clientname, address):
-        while 1:
-            chunk=clientname.recv(2**30)
-            if len(chunk):
-                self.handleRequest(json.loads(chunk))
-    
     def balance(self):
         return sum(txOut.value for txOut in self.chain.pool.txOuts if txOut.address.equals(self.pubKey))
         
-    def handleRequest(self, request):
+    def handleRequest(self, request, source):
         if request['type'] == "REQUEST_CHAIN":
-            self.shareChain()
+            self.shareChain(source)
         elif request['type'] == "CHAIN":
             candidate = Blockchain.fromJSON(request['data'])
             if len(candidate.blocks) > len(self.chain.blocks): # todo: and candidate is valid
@@ -113,47 +106,63 @@ class Node:
         else:
             print("Unknown request type!")
         return
-                        
-    def exposeToNewPeers(self):
+
+    # Run once after intialization to connect node to network
+    def connect(self):
+        # Expose magic port to new connections
         self.listener = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.listener.bind(('',MAGIC_PORT))
+        Thread(target = self.listen).start()
         
-        def listen():
-            while not self.listener._closed:
-                try:
-                    self.listener.listen(1)
-                    # print("Listening on port {}.".format(self.listener.getsockname()[1]))
-                    (clientname,address)=self.listener.accept()
-                    Thread(target=self.receiveContinually, args=[clientname, address]).start()
-                    print("Received connection from {}, attempting connect back.".format(address))
-                    self.addPeer(address[0])
-                except OSError as e:
-                    if e.winerror == 10038:
-                        # Expected error upon socket close in another thread
-                        # Unavoidable w/o a janky hack
-                        pass
-                    else:
-                        raise e
-        
-        Thread(target = listen).start()
+        # Connect to peers
+        for peer in self.peers:
+            self.connectToPeer(peer)
+            
+    # Listen on the magic port
+    def listen(self):
+        while not self.listener._closed:
+            try:
+                # Listen for a new connection
+                self.listener.listen(1)
+                (clientname,address)=self.listener.accept() 
+                
+                # Upon connection, create a thread to receive data
+                Thread(target=self.receiveContinually, args=[clientname, address]).start()
+                print("Received connection from {}, attempting connect back.".format(address))
+                
+                # Adds connection to list of known peers
+                self.addPeer(address[0])
+            except OSError as e:
+                if e.winerror == 10038:
+                    # Expected error upon socket close in another thread
+                    # Unavoidable w/o a janky hack
+                    pass
+                else:
+                    raise e
+                    
+    def receiveContinually(self, clientname, address):
+        while 1:
+            chunk=clientname.recv(2**30)
+            if len(chunk):
+                self.handleRequest(json.loads(chunk), address[0])
+                    
+    def sendToPeers(self, request, recipient='all'):
+        data = json.dumps(request).encode("utf-8")
+        for peer in self.peerSocks:
+            if recipient == 'all' or recipient == peer:
+                self.peerSocks[peer].send(data)
     
-    def sendToPeers(self, request):
-        for sock in self.peersSendSocks:
-            sock.send(json.dumps(request).encode("utf-8"))
-    
-    def addPeer(self, host):
-        if not host in self.peers:
-            self.peers.append(host)
-        self.connectToPeer(host)
+    def addPeer(self, peer):
+        if not peer in self.peers:
+            self.peers.append(peer)
+        self.connectToPeer(peer)
         
-    def connectToPeer(self, host):
-        def t(host):
+    def connectToPeer(self, peer):
+        def t(peer):
             sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            if host in self.peersSendHosts:
+            if peer in self.peerSocks:
                 return
-            sock.connect((host, MAGIC_PORT))
-            # print("Connected")
-            self.peersSendSocks.append(sock)
-            self.peersSendHosts.append(host)
-        Thread(target=t, args=[host]).start()
+            sock.connect((peer, MAGIC_PORT))
+            self.peerSocks[peer] = sock
+        Thread(target=t, args=[peer]).start()
