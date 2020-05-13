@@ -45,7 +45,33 @@ class Node:
         f = open(path, 'w')
         f.write(json.dumps(obj, default=lambda o:o.__dict__))
         f.close()
-    
+        
+    def give(self, address, amt):
+        if amt > self.balance():
+            print("Insufficient balance")
+            return
+        
+        myOuts = [txOut for txOut in self.chain.pool.txOuts if txOut.address.equals(self.pubKey)]
+        
+        toGive = amt
+        consumed = []
+        
+        created = [TxOut(address, amt)]
+        
+        for out in myOuts:
+            consumed.append(TxIn(out.txHash, out.idx))
+            if out.value >= toGive:
+                created.append( TxOut(self.pubKey, out.value - toGive) )
+            toGive -= out.value
+
+        tx = Transaction(consumed, created)
+        tx.sign(self.privKey.use(), 0)
+        tx.sign(self.privKey.use(), 1)
+        
+        self.sendToPeers({
+            "type": 'TRANSACTION',
+            "data": tx.toJSON()
+        })
     
     # Mine until stopMining() called
     def mine(self):
@@ -103,6 +129,12 @@ class Node:
             candidate = Blockchain.fromJSON(request['data'])
             if len(candidate.blocks) > len(self.chain.blocks): # todo: and candidate is valid
                 self.chain = candidate
+        elif request['type'] == "TRANSACTION":
+            candidate = Transaction.fromJSON(request['data'])
+            # if candidate in pendingTxs already or if tx invalid, return
+            self.pendingTxs.append(candidate)
+            self.sendToPeers(request)
+        
         else:
             print("Unknown request type!")
         return
