@@ -1,6 +1,7 @@
 import hashlib
 import rsa
 import time
+import json
 
 class Transaction:
   def __init__(self, txIns, txOuts):
@@ -21,6 +22,37 @@ class Transaction:
             return False 
         return True
     return False
+
+  @staticmethod
+  def fromJSON(j):
+      jsonTx = json.loads(j)
+      txIns = []
+      txOuts = []
+      
+      for txIn in jsonTx['txIns']:
+        newTxIn = TxIn(txIn['prevTxHash'], txIn['prevTxOutIndex'])
+        newTxIn.signature = txIn['signature']
+        txIns.append(newTxIn)
+      for txOut in jsonTx['txOuts']:
+        if txOut['address'] == None:
+          newPubKey = None
+        else:
+          newPubKey = PubKeyWrapper(rsa.key.PublicKey(txOut['address']['n'], txOut['address']['e']))
+        newTxOut = TxOut(newPubKey, txOut['value'])
+        newTxOut.txHash = txOut['txHash']
+        newTxOut.idx = txOut['idx']
+        txOuts.append(newTxOut)
+    
+      tx = Transaction(txIns, txOuts)
+      tx.timestamp = jsonTx['timestamp']
+      return tx
+  
+  def toJSON(self):
+      def customEncoder(o):
+          if isinstance(o, bytes):
+              return str(o)[2:-1]
+          return o.__dict__
+      return json.dumps(self, default=customEncoder, indent=2)
 
   def sign(self, privKey, inputIndex):
     # will need to make this signature variable a string

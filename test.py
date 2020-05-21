@@ -26,7 +26,6 @@ for _ in range(0,30):
   blockchain.addBlock(coinBaseToAliceBlock)
 '''
 
-'''
 print(0)
 coinBaseToAliceBlock = Block(blockchain.blocks[0].hash(), alicePub, [], 0, 0)
 blockchain.addBlock(coinBaseToAliceBlock)
@@ -59,12 +58,20 @@ elif FORCED_ERROR != 'unsigned':
 
 aliceToBobBlock = Block(coinBaseToAliceBlock.hash(), alicePub, [tx], 0, 0)
 blockchain.addBlock(aliceToBobBlock)
-'''
+
+
+#print("BEFORE TRANSLATION")
+#jsonStr = blockchain.toJSON()
+#print(jsonStr)
+#duplicate = blockchain.fromJSON(jsonStr)
+#print("AFTER TRANSLATION")
+#json2 = duplicate.toJSON()
+#print(json2)
 
 print("BEFORE TRANSLATION")
-jsonStr = blockchain.toJSON()
-print(jsonStr)
-duplicate = blockchain.fromJSON(jsonStr)
+jsonTx = tx.toJSON()
+print(jsonTx)
+duplicate = Transaction.fromJSON(jsonTx)
 print("AFTER TRANSLATION")
 json2 = duplicate.toJSON()
 print(json2)
