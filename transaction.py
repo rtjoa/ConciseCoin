@@ -8,6 +8,20 @@ class Transaction:
     self.txOuts = txOuts
     self.timestamp = time.time()
 
+  def equals(self, other):
+    if (isinstance(other, Transaction)):
+      if (self.timestamp==other.timestamp and len(self.txIns)==len(other.txIns) and len(self.txOuts)==len(other.txOuts)):
+        for i in range(len(self.txIns)):
+          if (self.txIns[i].prevTxHash!=other.txIns[i].prevTxHash or self.txIns[i].prevTxOutIndex!=other.txIns[i].prevTxOutIndex
+          or self.txIns[i].signature!=other.txIns[i].signature):
+            return False
+        for i in range(len(self.txOuts)):
+          if (self.txOuts[i].address!=other.txOuts[i].address or self.txOuts[i].value!=other.txOuts[i].value
+          or self.txOuts[i].txHash!=other.txOuts[i].txHash or self.txOuts[i].idx!=other.txOuts[i].idx):
+            return False 
+        return True
+    return False
+
   def sign(self, privKey, inputIndex):
     # will need to make this signature variable a string
     self.txIns[inputIndex].signature = rsa.sign(self.getDataToSign(inputIndex), privKey, 'SHA-256')

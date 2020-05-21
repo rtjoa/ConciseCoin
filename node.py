@@ -131,7 +131,12 @@ class Node:
                 self.chain = candidate
         elif request['type'] == "TRANSACTION":
             candidate = Transaction.fromJSON(request['data'])
-            # if candidate in pendingTxs already or if tx invalid, return
+            if not verifyTx(candidate):
+                print("Invalid transaction!")
+            for tx in range(self.pendingTxs):
+                if candidate.equals(tx):
+                    print("Duplicate transaction proposed!")
+                break
             self.pendingTxs.append(candidate)
             self.sendToPeers(request)
         
