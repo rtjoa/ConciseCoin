@@ -85,13 +85,12 @@ class Node:
         def m():
             attempts = 0
             while self.mining:
-                difficulty = self.chain.blocks[-1].difficulty
                 nonce = random.randint(0,10**10)
                 attempts += 1
                 childDiff = self.chain.nextDifficulty()
                 attemptBlock = Block(self.chain.blocks[-1].hash(), self.pubKey, self.pendingTxs, nonce, childDiff)
-                asBin = bin(int(attemptBlock.hash(),16))
-                if len(asBin) <= 258 - difficulty:
+                
+                if attemptBlock.satisfiedDifficulty() >= childDiff:
                     print("Took {} attempts".format(attempts))
                     self.chain.addBlock(attemptBlock)
                     self.shareChain()

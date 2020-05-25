@@ -15,6 +15,43 @@ class Blockchain:
   def __init__(self):
     self.blocks = [Block(None, None, [], 0, DEFAULT_DIFFICULTY)]
     self.pool = UTXOPool()
+    
+  @staticmethod
+  def validate(blockchain):
+    # first - check previous hashes
+    for i in range(len(blockchain.blocks)-1):
+      if blockchain.blocks[i].hash() != blockchain.blocks[i+1].prevHash:
+        return False
+    
+    # second - reconstruct blockchain with txs and coinbase recipients
+    dummyChain = Blockchain()
+    dummyChain.blocks[0].timestamp = blockchain.blocks[0].timestamp
+    for block in blockchain.blocks[1:]:
+      newBlock = Block(dummyChain.blocks[-1].hash(), [tx.clone() for tx in block.txs][0].txOuts[0].address, [tx.clone() for tx in block.txs], block.nonce, block.difficulty)
+      newBlock.txs.pop(0)
+      newBlock.timestamp = block.timestamp
+      
+      try:
+        dummyChain.addBlockException(newBlock)
+      except Exception as e:
+        print(e)
+        return False
+    
+    for i in range(len(blockchain.blocks)-1):
+      difficulty = blockchain.nextDifficulty(i)
+      if blockchain.blocks[i+1].satisfiedDifficulty() < difficulty:
+          print("Difficulty not satisfied")
+          return False
+    
+    return True
+
+  def addBlockException(self, block):
+    dummyPool = self.pool.clone()
+    dummyPool.handleCoinbase(block.txs[0])
+    # check block hash < difficulty too!!
+    dummyPool.handleTxs(block.txs[1:])
+    self.pool = dummyPool
+    self.blocks.append(block)
 
   @staticmethod
   def fromJSON(j):
@@ -32,7 +69,8 @@ class Blockchain:
 
         for txIn in tx['txIns']:
           newBlockTxIn = TxIn(txIn['prevTxHash'], txIn['prevTxOutIndex'])
-          newBlockTxIn.signature = txIn['signature']
+          # TODO: Make less illegal
+          newBlockTxIn.signature = eval(txIn['signature'])
           newBlockTxIns.append(newBlockTxIn)
         for txOut in tx['txOuts']:
           if txOut['address'] == None:
@@ -53,7 +91,9 @@ class Blockchain:
         coinbaseRecipient = None
       else:
         coinbaseRecipient = PubKeyWrapper(rsa.key.PublicKey(coinbaseRecipientDict['n'], coinbaseRecipientDict['e']))
-      newBlock = Block(block['prevHash'], coinbaseRecipient, newBlockTxs, block['nonce'], block['difficulty'])
+        
+      prevHash = newBlocks[-1].hash() if len(newBlocks) else None
+      newBlock = Block(prevHash, coinbaseRecipient, newBlockTxs, block['nonce'], block['difficulty'])
 
       # remove duplicate coinbase transaction
       newBlock.txs.pop(0)
@@ -80,34 +120,39 @@ class Blockchain:
   def toJSON(self):
     def customEncoder(o):
       if isinstance(o, bytes):
-        return str(o)[2:-1]
+        # TODO: Make less illegal
+        return repr(o)
       return o.__dict__
-    return json.dumps(self, default=customEncoder)
+    return json.dumps(self, default=customEncoder, indent=2)
   
   def addBlock(self, block):
     try:
       dummyPool = self.pool.clone()
       dummyPool.handleCoinbase(block.txs[0])
       # check block hash < difficulty too!!
-      dummyPool.handleTxs(block.txs[1:])
+      # dummyPool.handleTxs(block.txs[1:])
       self.pool = dummyPool
       self.blocks.append(block)
     except Exception as e:
       print(e)
       
-  def nextDifficulty(self):
-      top = self.blocks[-1]
-      if len(self.blocks) % DIFFICULTY_RECALC_INTERVAL:
+  def nextDifficulty(self, blockIndex = None):
+      if blockIndex == None:
+          blockIndex = len(self.blocks)-1
+          
+      dummyBlocks = self.blocks[:blockIndex+1]
+      top = dummyBlocks[-1]
+      if len(dummyBlocks) % DIFFICULTY_RECALC_INTERVAL:
           return top.difficulty
-      i = max(-1 * DIFFICULTY_RECALC_INTERVAL, -len(self.blocks))
-      mineTime = (top.timestamp - self.blocks[i].timestamp)/abs(i)
+      i = max(-1 * DIFFICULTY_RECALC_INTERVAL, -len(dummyBlocks))
+      mineTime = (top.timestamp - dummyBlocks[i].timestamp)/abs(i)
       intendedMineTimeMultiplier = TARGET_MINE_TIME/mineTime
       return round(top.difficulty + math.log(intendedMineTimeMultiplier, 2))
 
 class Block:
   def __init__(self, prevHash, coinbaseRecipient, txs, nonce, difficulty):
     self.prevHash = prevHash
-    self.txs = txs.copy()
+    self.txs = [tx.clone() for tx in txs]
     self.nonce = nonce
     self.timestamp = time.time()
     self.difficulty = difficulty
@@ -116,8 +161,12 @@ class Block:
   
   def hash(self):
     hasher = hashlib.sha256()
-    hasher.update((str(self.prevHash)+str(self.txs)+str(self.nonce)+str(self.difficulty)+str(self.timestamp)).encode('utf-8'))
+    hasher.update((str(self.prevHash)+str([tx.represent() for tx in self.txs])+str(self.nonce)+str(self.difficulty)+str(self.timestamp)).encode('utf-8'))
     return hasher.hexdigest()
+
+  def satisfiedDifficulty(self):
+     asBin = bin(int(self.hash(),16))
+     return 258 - len(asBin)
   
   @staticmethod
   def fromJSON():

@@ -70,5 +70,9 @@ while 1:
         print(node.balance())
     elif terms[0] == "give":
         node.give(terms[1], float(terms[2]))
+    elif terms[0] == "validate":
+        print(Blockchain.validate(node.chain))
+    elif terms[0] == "genesis":
+        node.chain = Blockchain()
     else:
         print("Unknown command!")

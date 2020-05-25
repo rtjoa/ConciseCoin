@@ -8,6 +8,13 @@ class Transaction:
     self.txIns = txIns
     self.txOuts = txOuts
     self.timestamp = time.time()
+    
+  def clone(self):
+      txIns = [txIn.clone() for txIn in self.txIns]
+      txOuts = [txOut.clone() for txOut in self.txOuts]
+      dupe = Transaction(txIns, txOuts)
+      dupe.timestamp = self.timestamp
+      return dupe
 
   def equals(self, other):
     if (isinstance(other, Transaction)):
@@ -52,7 +59,12 @@ class Transaction:
           if isinstance(o, bytes):
               return str(o)[2:-1]
           return o.__dict__
-      return json.dumps(self, default=customEncoder, indent=2)
+      return json.dumps(self, default=customEncoder)
+  
+  def represent(self):
+      ins = ";".join([txIn.representSigned() for txIn in self.txIns])
+      outs = ";".join([txOut.represent() for txOut in self.txOuts])
+      return str(self.timestamp) + ins + outs
 
   def sign(self, privKey, inputIndex):
     # will need to make this signature variable a string
@@ -74,6 +86,11 @@ class TxIn:
     self.prevTxOutIndex = prevTxOutIndex
     self.signature = None
   
+  def clone(self):
+      dupe = TxIn(self.prevTxHash, self.prevTxOutIndex)
+      dupe.signature = self.signature
+      return dupe
+    
   def representSigned(self):
     return str(self.prevTxHash) + str(self.prevTxOutIndex) + str(self.signature)
 
@@ -87,8 +104,16 @@ class TxOut:
     self.txHash = None
     self.idx = None
   
+  def clone(self):
+      dupe = TxOut(self.address, self.value)
+      dupe.txHash = self.txHash
+      dupe.idx = self.idx
+      return dupe
+  
   def represent(self):
-    return str(self.address) + str(self.value)
+    if not self.address:
+        return str(self.value)
+    return str(self.address.__dict__) + str(self.value)
 
 class PubKeyWrapper:
   def __init__(self, pubKey):

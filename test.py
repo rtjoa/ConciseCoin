@@ -7,7 +7,6 @@ import time
 import math
 import json
 
-
 blockchain = Blockchain()
 genesisHash = blockchain.blocks[0].hash()
 
@@ -26,7 +25,7 @@ for _ in range(0,30):
   blockchain.addBlock(coinBaseToAliceBlock)
 '''
 
-print(0)
+#print(0)
 coinBaseToAliceBlock = Block(blockchain.blocks[0].hash(), alicePub, [], 0, 0)
 blockchain.addBlock(coinBaseToAliceBlock)
 aliceCoinbaseTxIn = TxIn(coinBaseToAliceBlock.txs[0].hash(), 0)
@@ -61,17 +60,23 @@ blockchain.addBlock(aliceToBobBlock)
 
 
 #print("BEFORE TRANSLATION")
-#jsonStr = blockchain.toJSON()
+jsonStr = blockchain.toJSON()
 #print(jsonStr)
-#duplicate = blockchain.fromJSON(jsonStr)
+duplicate = blockchain.fromJSON(jsonStr)
+#print("AFTER TRANSLATION")
+json2 = duplicate.toJSON()
+print(json2)
+
+print(Blockchain.validate(blockchain))
+print(Blockchain.validate(duplicate))
+
+#print(blockchain.blocks[1].txs[0].txOuts[0].txHash)
+#print(duplicate.blocks[1].txs[0].txOuts[0].txHash)
+
+#print("BEFORE TRANSLATION")
+#jsonTx = tx.toJSON()
+#print(jsonTx)
+#duplicate = Transaction.fromJSON(jsonTx)
 #print("AFTER TRANSLATION")
 #json2 = duplicate.toJSON()
 #print(json2)
-
-print("BEFORE TRANSLATION")
-jsonTx = tx.toJSON()
-print(jsonTx)
-duplicate = Transaction.fromJSON(jsonTx)
-print("AFTER TRANSLATION")
-json2 = duplicate.toJSON()
-print(json2)
