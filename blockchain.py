@@ -130,7 +130,7 @@ class Blockchain:
       dummyPool = self.pool.clone()
       dummyPool.handleCoinbase(block.txs[0])
       # check block hash < difficulty too!!
-      # dummyPool.handleTxs(block.txs[1:])
+      dummyPool.handleTxs(block.txs[1:])
       self.pool = dummyPool
       self.blocks.append(block)
     except Exception as e:
