@@ -107,6 +107,11 @@ class Node:
             "data": chain
         }, recipient)
     
+    def ping(self, recipient='all'):
+        self.sendToPeers({
+            "type": "PING"
+        }, recipient)
+    
     def requestChain(self):
         self.sendToPeers({
             "type": "REQUEST_CHAIN"
@@ -138,7 +143,8 @@ class Node:
                 break
             self.pendingTxs.append(candidate)
             self.sendToPeers(request)
-        
+        elif request['type'] == "PING":
+            print("Ping from {}".format(source))
         else:
             print("Unknown request type!")
         return
@@ -198,6 +204,12 @@ class Node:
     def addPeer(self, peer):
         if not peer in self.peers:
             self.peers.append(peer)
+        if peer in self.peerSocks:
+            try:
+                self.peerSocks[peer].send('ping'.encode('utf-8'))
+                return
+            except:
+                pass
         self.connectToPeer(peer)
         
     def connectToPeer(self, peer):

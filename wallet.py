@@ -61,6 +61,8 @@ while 1:
         node.requestChain()
     elif terms[0] == "shareChain":
         node.shareChain()
+    elif terms[0] == "ping":
+        node.ping()
     elif terms[0] == "stopMining":
         node.stopMining()
     elif terms[0] == "addPeer":
