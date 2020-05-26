@@ -52,7 +52,6 @@ while 1:
     command = input(">> ")
     terms = command.split(" ")
     if terms[0] == "quit":
-        node.listener.close()
         node.stopMining()
         node.saveToFile(SAVE_FILE)
         sys.exit()

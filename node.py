@@ -179,7 +179,13 @@ class Node:
                     
     def receiveContinually(self, clientname, address):
         while 1:
-            chunk=clientname.recv(2**30)
+            try:
+                chunk=clientname.recv(2**30)
+            except ConnectionResetError as e:
+                if e.errno==54:
+                    break
+                else:
+                    raise e
             if len(chunk):
                 self.handleRequest(json.loads(chunk), address[0])
                     
@@ -197,8 +203,10 @@ class Node:
     def connectToPeer(self, peer):
         def t(peer):
             sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            if peer in self.peerSocks:
-                return
-            sock.connect((peer, MAGIC_PORT))
-            self.peerSocks[peer] = sock
+            #print("Duplicate peer!")
+            try:
+                sock.connect((peer, MAGIC_PORT))
+                self.peerSocks[peer] = sock
+            except TimeoutError as e:
+                print(e.__dict__)
         Thread(target=t, args=[peer]).start()
