@@ -193,7 +193,8 @@ class Node:
                 else:
                     raise e
             if len(chunk):
-                self.handleRequest(json.loads(chunk), address[0])
+                if chunk != 'null':
+                    self.handleRequest(json.loads(chunk), address[0])
                     
     def sendToPeers(self, request, recipient='all'):
         data = json.dumps(request).encode("utf-8")
@@ -206,7 +207,7 @@ class Node:
             self.peers.append(peer)
         if peer in self.peerSocks:
             try:
-                self.peerSocks[peer].send('ping'.encode('utf-8'))
+                self.peerSocks[peer].send('null'.encode('utf-8'))
                 return
             except:
                 pass
