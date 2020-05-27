@@ -193,7 +193,7 @@ class Node:
                 else:
                     raise e
             if len(chunk):
-                if chunk != 'null':
+                if chunk != b'null':
                     self.handleRequest(json.loads(chunk), address[0])
                     
     def sendToPeers(self, request, recipient='all'):
@@ -221,5 +221,12 @@ class Node:
                 sock.connect((peer, MAGIC_PORT))
                 self.peerSocks[peer] = sock
             except TimeoutError as e:
-                print(e.__dict__)
+                pass
+                # print(peer)
+                # raise e
+                # print(e.__dict__)
+            except ConnectionRefusedError as e:
+                if e.errno == 10061:
+                    pass
+                
         Thread(target=t, args=[peer]).start()

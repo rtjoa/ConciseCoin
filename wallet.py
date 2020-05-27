@@ -52,6 +52,10 @@ while 1:
     command = input(">> ")
     terms = command.split(" ")
     if terms[0] == "quit":
+        # for peer in node.peerSocks:
+        #     node.peerSocks[peer].shutdown(socket.SHUT_RDWR)
+        #     node.peerSocks[peer].close()
+        node.listener.close()
         node.stopMining()
         node.saveToFile(SAVE_FILE)
         sys.exit()
