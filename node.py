@@ -102,7 +102,7 @@ class Node:
     
     # Shares chain with all peers BUT IT SHOULD ONLY SHARE WITH ONE INSTEAD
     def shareChain(self, recipient='all'):
-        chain = self.chain.toJSON()
+        chain = self.chain.toJSON() + "<END>"
         self.sendToPeers({
             "type": "CHAIN",
             "data": chain
@@ -187,18 +187,20 @@ class Node:
     def receiveContinually(self, clientname, address):
         while 1:
             try:
-                chunk=clientname.recv(2**30)
+                chunk = b''
+                while not b'<END>' in chunk:
+                    chunk += clientname.recv(4096)
+                if len(chunk):
+                    if self.debug:
+                        print("Received:")
+                        print(chunk)
+                    if chunk != b'null':
+                        self.handleRequest(json.loads(chunk), address[0])
             except ConnectionResetError as e:
                 if e.errno==54:
                     break
                 else:
                     raise e
-            if len(chunk):
-                if self.debug:
-                    print("Received:")
-                    print(chunk)
-                if chunk != b'null':
-                    self.handleRequest(json.loads(chunk), address[0])
                     
     def sendToPeers(self, request, recipient='all'):
         data = json.dumps(request).encode("utf-8")
