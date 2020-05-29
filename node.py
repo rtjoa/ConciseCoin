@@ -140,8 +140,12 @@ class Node:
                 self.chain = candidate
         elif request['type'] == "TRANSACTION":
             candidate = Transaction.fromJSON(request['data'])
-            if not self.chain.pool.verifyTx(candidate):
+            try:
+                self.chain.pool.verifyTx(candidate)
+            except Exception as e:
                 print("Invalid transaction!")
+                if self.debug:
+                    raise e
             for tx in self.pendingTxs:
                 if candidate.equals(tx):
                     print("Duplicate transaction proposed!")
