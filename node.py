@@ -102,7 +102,7 @@ class Node:
     
     # Shares chain with all peers BUT IT SHOULD ONLY SHARE WITH ONE INSTEAD
     def shareChain(self, recipient='all'):
-        chain = self.chain.toJSON() + "<END>"
+        chain = self.chain.toJSON()
         self.sendToPeers({
             "type": "CHAIN",
             "data": chain
@@ -190,6 +190,7 @@ class Node:
                 chunk = b''
                 while not b'<END>' in chunk:
                     chunk += clientname.recv(4096)
+                chunk = chunk.replace(b'<END>', b'')
                 if len(chunk):
                     if self.debug:
                         print("Received:")
@@ -203,7 +204,7 @@ class Node:
                     raise e
                     
     def sendToPeers(self, request, recipient='all'):
-        data = json.dumps(request).encode("utf-8")
+        data = (json.dumps(request) + "<END>").encode("utf-8")
         for peer in self.peerSocks:
             if recipient == 'all' or recipient == peer:
                 self.peerSocks[peer].send(data)
@@ -216,7 +217,7 @@ class Node:
             self.peers.append(peer)
         if peer in self.peerSocks:
             try:
-                self.peerSocks[peer].send('null'.encode('utf-8'))
+                self.peerSocks[peer].send('null<END>'.encode('utf-8'))
                 print("Returning")
                 return
             except:
