@@ -64,10 +64,14 @@ class Node:
             if out.value >= toGive:
                 created.append( TxOut(self.pubKey, out.value - toGive) )
             toGive -= out.value
+            if toGive <= 0:
+                break
 
         tx = Transaction(consumed, created)
-        tx.sign(self.privKey.use(), 0)
-        tx.sign(self.privKey.use(), 1)
+        for i in range(len(consumed)):
+            tx.sign(self.privKey.use(), i)
+        # tx.sign(self.privKey.use(), 0)
+        # tx.sign(self.privKey.use(), 1)
         
         self.sendToPeers({
             "type": 'TRANSACTION',
@@ -138,10 +142,10 @@ class Node:
             candidate = Transaction.fromJSON(request['data'])
             if not self.chain.pool.verifyTx(candidate):
                 print("Invalid transaction!")
-            for tx in range(self.pendingTxs):
+            for tx in self.pendingTxs:
                 if candidate.equals(tx):
                     print("Duplicate transaction proposed!")
-                break
+                    return
             self.pendingTxs.append(candidate)
             self.sendToPeers(request)
         elif request['type'] == "PING":
