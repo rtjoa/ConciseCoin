@@ -20,6 +20,7 @@ class Node:
                 self.peers.append(peer)
         self.listener = None
         self.mining = False
+        self.debug = False
     
     # Factory method to load node from json file
     @staticmethod
@@ -193,6 +194,9 @@ class Node:
                 else:
                     raise e
             if len(chunk):
+                if self.debug:
+                    print("Received:")
+                    print(chunk)
                 if chunk != b'null':
                     self.handleRequest(json.loads(chunk), address[0])
                     
@@ -201,6 +205,9 @@ class Node:
         for peer in self.peerSocks:
             if recipient == 'all' or recipient == peer:
                 self.peerSocks[peer].send(data)
+                if self.debug:
+                    print("Sent to {}:".format(peer))
+                    print(data)
     
     def addPeer(self, peer):
         if not peer in self.peers:
@@ -208,11 +215,11 @@ class Node:
         if peer in self.peerSocks:
             try:
                 self.peerSocks[peer].send('null'.encode('utf-8'))
-                print("Attempting")
+                print("Returning")
                 return
             except:
                 pass
-        print("Returning")
+        print("Attempting")
         self.connectToPeer(peer)
         
     def connectToPeer(self, peer):

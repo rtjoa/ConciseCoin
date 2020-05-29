@@ -81,5 +81,13 @@ while 1:
         node.chain = Blockchain()
     elif terms[0] == "height":
         print(len(node.chain.blocks))
+    elif terms[0] == "debug":
+        node.debug = not node.debug
+        print("Debug set to {}".format(node.debug))
+    elif terms[0] == "eval":
+        try:
+            print(eval(input("In: ")))
+        except Exception as e:
+            print(e)
     else:
         print("Unknown command!")
