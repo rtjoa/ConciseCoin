@@ -14,6 +14,61 @@ VERSION = 0.1
 SAVE_FILE = 'save.txt'
 DEBUG = True
 
+def runCommand(command):
+    global prevCmd
+    terms = command.split(" ")
+    if terms[0] == "quit":
+        # for peer in node.peerSocks:
+        #     node.peerSocks[peer].shutdown(socket.SHUT_RDWR)
+        #     node.peerSocks[peer].close()
+        node.listener.close()
+        node.stopMining()
+        node.saveToFile(SAVE_FILE)
+        sys.exit()
+    elif terms[0] == "mine":
+        node.mine()
+    elif terms[0] == "requestChain":
+        node.requestChain()
+    elif terms[0] == "shareChain":
+        node.shareChain()
+    elif terms[0] == "ping":
+        node.ping()
+    elif terms[0] == "stopMining":
+        node.stopMining()
+    elif terms[0] == "addPeer":
+        node.addPeer(terms[1])
+    elif terms[0] == "balance":
+        print(node.balance())
+    elif terms[0] == "give":
+        node.give(PubKeyWrapper({"n": int(terms[1]), "e": int(terms[2])}), float(terms[3]))
+    elif terms[0] == "validate":
+        print(Blockchain.validate(node.chain))
+    elif terms[0] == "genesis":
+        node.chain = Blockchain()
+    elif terms[0] == "height":
+        print(len(node.chain.blocks))
+    elif terms[0] == "debug":
+        node.debug = not node.debug
+        print("Debug set to {}".format(node.debug))
+    elif terms[0] == "prev":
+        try:
+            prevCmd
+        except NameError:
+            print("No previous command.")
+            return
+        print(">> " + prevCmd)
+        runCommand(prevCmd)
+    elif terms[0] == "eval":
+        try:
+            print(eval(input("In: ")))
+        except Exception as e:
+            print(e)
+    else:
+        print("Unknown command!")
+    
+    if terms[0] != "prev":
+        prevCmd = command
+        
 py = platform.python_version()
 
 if py[0] != '3':
@@ -50,44 +105,5 @@ print("Available commands: addPeer <peer>, balance, give <peer> <amt>, mine, qui
 
 while 1:
     command = input(">> ")
-    terms = command.split(" ")
-    if terms[0] == "quit":
-        # for peer in node.peerSocks:
-        #     node.peerSocks[peer].shutdown(socket.SHUT_RDWR)
-        #     node.peerSocks[peer].close()
-        node.listener.close()
-        node.stopMining()
-        node.saveToFile(SAVE_FILE)
-        sys.exit()
-    elif terms[0] == "mine":
-        node.mine()
-    elif terms[0] == "requestChain":
-        node.requestChain()
-    elif terms[0] == "shareChain":
-        node.shareChain()
-    elif terms[0] == "ping":
-        node.ping()
-    elif terms[0] == "stopMining":
-        node.stopMining()
-    elif terms[0] == "addPeer":
-        node.addPeer(terms[1])
-    elif terms[0] == "balance":
-        print(node.balance())
-    elif terms[0] == "give":
-        node.give(terms[1], float(terms[2]))
-    elif terms[0] == "validate":
-        print(Blockchain.validate(node.chain))
-    elif terms[0] == "genesis":
-        node.chain = Blockchain()
-    elif terms[0] == "height":
-        print(len(node.chain.blocks))
-    elif terms[0] == "debug":
-        node.debug = not node.debug
-        print("Debug set to {}".format(node.debug))
-    elif terms[0] == "eval":
-        try:
-            print(eval(input("In: ")))
-        except Exception as e:
-            print(e)
-    else:
-        print("Unknown command!")
+    runCommand(command)
+

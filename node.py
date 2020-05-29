@@ -20,7 +20,7 @@ class Node:
                 self.peers.append(peer)
         self.listener = None
         self.mining = False
-        self.debug = False
+        self.debug = True
     
     # Factory method to load node from json file
     @staticmethod
@@ -136,7 +136,7 @@ class Node:
                 self.chain = candidate
         elif request['type'] == "TRANSACTION":
             candidate = Transaction.fromJSON(request['data'])
-            if not verifyTx(candidate):
+            if not self.chain.pool.verifyTx(candidate):
                 print("Invalid transaction!")
             for tx in range(self.pendingTxs):
                 if candidate.equals(tx):
