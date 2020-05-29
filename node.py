@@ -208,9 +208,11 @@ class Node:
         if peer in self.peerSocks:
             try:
                 self.peerSocks[peer].send('null'.encode('utf-8'))
+                print("Attempting")
                 return
             except:
                 pass
+        print("Returning")
         self.connectToPeer(peer)
         
     def connectToPeer(self, peer):

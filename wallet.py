@@ -79,5 +79,7 @@ while 1:
         print(Blockchain.validate(node.chain))
     elif terms[0] == "genesis":
         node.chain = Blockchain()
+    elif terms[0] == "height":
+        print(len(node.chain.blocks))
     else:
         print("Unknown command!")
