@@ -20,7 +20,7 @@ class Node:
                 self.peers.append(peer)
         self.listener = None
         self.mining = False
-        self.debug = True
+        self.debug = False
     
     # Factory method to load node from json file
     @staticmethod
@@ -70,8 +70,6 @@ class Node:
         tx = Transaction(consumed, created)
         for i in range(len(consumed)):
             tx.sign(self.privKey.use(), i)
-        # tx.sign(self.privKey.use(), 0)
-        # tx.sign(self.privKey.use(), 1)
         
         self.sendToPeers({
             "type": 'TRANSACTION',
@@ -96,9 +94,10 @@ class Node:
                 attemptBlock = Block(self.chain.blocks[-1].hash(), self.pubKey, self.pendingTxs, nonce, childDiff)
                 
                 if attemptBlock.satisfiedDifficulty() >= childDiff:
-                    print("Took {} attempts".format(attempts))
+                    print("Mined block in {} attempts".format(attempts))
                     self.chain.addBlock(attemptBlock)
                     self.shareChain()
+                    self.mining = False
         Thread(target = m).start()
         
     def stopMining(self):
@@ -148,7 +147,8 @@ class Node:
                     raise e
             for tx in self.pendingTxs:
                 if candidate.equals(tx):
-                    print("Duplicate transaction proposed!")
+                    if self.debug:
+                        print("Duplicate transaction proposed!")
                     return
             self.pendingTxs.append(candidate)
             self.sendToPeers(request)
@@ -226,25 +226,19 @@ class Node:
         if peer in self.peerSocks:
             try:
                 self.peerSocks[peer].send('null<END>'.encode('utf-8'))
-                print("Returning")
                 return
             except:
                 pass
-        print("Attempting")
         self.connectToPeer(peer)
         
     def connectToPeer(self, peer):
         def t(peer):
             sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            #print("Duplicate peer!")
             try:
                 sock.connect((peer, MAGIC_PORT))
                 self.peerSocks[peer] = sock
             except TimeoutError as e:
                 pass
-                # print(peer)
-                # raise e
-                # print(e.__dict__)
             except ConnectionRefusedError as e:
                 if e.errno == 10061:
                     pass

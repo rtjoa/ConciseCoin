@@ -69,7 +69,6 @@ class Blockchain:
 
         for txIn in tx['txIns']:
           newBlockTxIn = TxIn(txIn['prevTxHash'], txIn['prevTxOutIndex'])
-          # TODO: Make less illegal
           newBlockTxIn.signature = eval(txIn['signature'])
           newBlockTxIns.append(newBlockTxIn)
         for txOut in tx['txOuts']:
@@ -120,7 +119,6 @@ class Blockchain:
   def toJSON(self):
     def customEncoder(o):
       if isinstance(o, bytes):
-        # TODO: Make less illegal
         return repr(o)
       return o.__dict__
     return json.dumps(self, default=customEncoder, indent=2)

@@ -59,7 +59,6 @@ class UTXOPool:
       if txIn.signature == None:
         raise ValueError("Input is unsigned!")
       try:
-        # signature = bytes(txIn.signature)
         signature = txIn.signature
 
         if not rsa.verify(tx.getDataToSign(idx), signature, prevTxOut.address.use()):
@@ -78,7 +77,7 @@ class UTXOPool:
       if txOut.value < 0:
         raise ValueError("Negative output value found!")
 
-    #sum of input values is greater than or equal to output values
+    # sum of input values is greater than or equal to output values
     created = sum(txOut.value for txOut in tx.txOuts)
     consumed = sum(prevTxOut.value for prevTxOut in prevTxOuts)
     if created > consumed:

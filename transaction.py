@@ -18,18 +18,6 @@ class Transaction:
 
   def equals(self, other):
       return self.toJSON() == other.toJSON()
-    # if (isinstance(other, Transaction)):
-    #   if (self.timestamp==other.timestamp and len(self.txIns)==len(other.txIns) and len(self.txOuts)==len(other.txOuts)):
-    #     for i in range(len(self.txIns)):
-    #       if (self.txIns[i].prevTxHash!=other.txIns[i].prevTxHash or self.txIns[i].prevTxOutIndex!=other.txIns[i].prevTxOutIndex
-    #       or self.txIns[i].signature!=other.txIns[i].signature):
-    #         return False
-    #     for i in range(len(self.txOuts)):
-    #       if (self.txOuts[i].address!=other.txOuts[i].address or self.txOuts[i].value!=other.txOuts[i].value
-    #       or self.txOuts[i].txHash!=other.txOuts[i].txHash or self.txOuts[i].idx!=other.txOuts[i].idx):
-    #         return False 
-    #     return True
-    # return False
 
   @staticmethod
   def fromJSON(j):
@@ -58,7 +46,6 @@ class Transaction:
   def toJSON(self):
      def customEncoder(o):
       if isinstance(o, bytes):
-        # TODO: Make less illegal
         return repr(o)
       return o.__dict__
      return json.dumps(self, default=customEncoder, indent=2)

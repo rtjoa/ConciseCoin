@@ -17,19 +17,10 @@ alicePub = PubKeyWrapper(alicePub)
 bobPub = PubKeyWrapper(bobPub)
 charliePub = PubKeyWrapper(charliePub)
 
-'''
-for _ in range(0,30):
-  startTime = time.time()
-  coinBaseToAliceBlock = mine(blockchain, [], alicePub)
-  print("Mined block in {} sec".format(time.time() - startTime))
-  blockchain.addBlock(coinBaseToAliceBlock)
-'''
 
-#print(0)
 coinBaseToAliceBlock = Block(blockchain.blocks[0].hash(), alicePub, [], 0, 0)
 blockchain.addBlock(coinBaseToAliceBlock)
 aliceCoinbaseTxIn = TxIn(coinBaseToAliceBlock.txs[0].hash(), 0)
-#aliceToBobBlock = mine(blockchain, [tx], alicePub)
 
 # choose which error you want to test, or 'no error' for a valid block
 FORCED_ERROR = 'no error'
