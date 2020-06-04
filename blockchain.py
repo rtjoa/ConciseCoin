@@ -1,10 +1,9 @@
 import json
-import rsa
-import hashlib
-import time
 import math
-from transaction import *
+from transaction import Transaction, TxIn, TxOut
+from block import Block
 from utxopool import UTXOPool
+from cryptography import PubKey
 
 COINBASE_AMT = 25
 DEFAULT_DIFFICULTY = 10
@@ -75,7 +74,7 @@ class Blockchain:
           if txOut['address'] == None:
             newPubKey = None
           else:
-            newPubKey = PubKeyWrapper(rsa.key.PublicKey(txOut['address']['n'], txOut['address']['e']))
+            newPubKey = PubKey.wrap(txOut['address'])
           newBlockTxOut = TxOut(newPubKey, txOut['value'])
           newBlockTxOut.txHash = txOut['txHash']
           newBlockTxOut.idx = txOut['idx']
@@ -89,7 +88,7 @@ class Blockchain:
       if coinbaseRecipientDict == None:
         coinbaseRecipient = None
       else:
-        coinbaseRecipient = PubKeyWrapper(rsa.key.PublicKey(coinbaseRecipientDict['n'], coinbaseRecipientDict['e']))
+        coinbaseRecipient = PubKey.wrap(coinbaseRecipientDict)
         
       prevHash = newBlocks[-1].hash() if len(newBlocks) else None
       newBlock = Block(prevHash, coinbaseRecipient, newBlockTxs, block['nonce'], block['difficulty'])
@@ -106,7 +105,7 @@ class Blockchain:
       if txOut['address'] == None:
         newPubKey = None
       else:
-        newPubKey = PubKeyWrapper(rsa.key.PublicKey(txOut['address']['n'], txOut['address']['e']))
+        newPubKey = PubKey.wrap(txOut['address'])
       newPoolTxOut = TxOut(newPubKey, txOut['value'])
       newPoolTxOut.txHash = txOut['txHash']
       newPoolTxOut.idx = txOut['idx']
@@ -146,29 +145,3 @@ class Blockchain:
       mineTime = (top.timestamp - dummyBlocks[i].timestamp)/abs(i)
       intendedMineTimeMultiplier = TARGET_MINE_TIME/mineTime
       return round(top.difficulty + math.log(intendedMineTimeMultiplier, 2))
-
-class Block:
-  def __init__(self, prevHash, coinbaseRecipient, txs, nonce, difficulty):
-    self.prevHash = prevHash
-    self.txs = [tx.clone() for tx in txs]
-    self.nonce = nonce
-    self.timestamp = time.time()
-    self.difficulty = difficulty
-    coinbase = Transaction([], [TxOut(coinbaseRecipient, COINBASE_AMT)])
-    self.txs.insert(0, coinbase)
-  
-  def hash(self):
-    hasher = hashlib.sha256()
-    hasher.update((str(self.prevHash)+str([tx.represent() for tx in self.txs])+str(self.nonce)+str(self.difficulty)+str(self.timestamp)).encode('utf-8'))
-    return hasher.hexdigest()
-
-  def satisfiedDifficulty(self):
-     asBin = bin(int(self.hash(),16))
-     return 258 - len(asBin)
-  
-  @staticmethod
-  def fromJSON():
-    return Block(None, None, None, None, None)
-  
-  def toJSON(self):
-    return ""
